@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import anthropic
@@ -45,14 +47,6 @@ Explica conceptos de forma progresiva (básico → avanzado).
 Utiliza analogías cuando sea posible.
 Proporciona ejemplos prácticos."""
 
-@app.get("/")
-async def root():
-    return {
-        "nombre": "ChatBot Sistemas Digitales",
-        "version": "1.0.0",
-        "estado": "Operacional"
-    }
-
 @app.get("/health")
 async def health_check():
     return {
@@ -90,6 +84,12 @@ async def chat(request: ChatRequest):
         raise HTTPException(status_code=500, detail=f"Error en API: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+app.mount("/static", StaticFiles(directory="."), name="static")
+
+@app.get("/")
+async def serve_frontend():
+    return FileResponse("index.html")
 
 if __name__ == "__main__":
     import uvicorn
