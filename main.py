@@ -1,11 +1,11 @@
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List
-import anthropic
-import os
+import google.generativeai as genai
 from datetime import datetime
 
 app = FastAPI(
@@ -47,41 +47,43 @@ Explica conceptos de forma progresiva (básico → avanzado).
 Utiliza analogías cuando sea posible.
 Proporciona ejemplos prácticos."""
 
+# Configuración de Gemini
+API_KEY = os.getenv("GOOGLE_API_KEY")
+if API_KEY:
+    genai.configure(api_key=API_KEY)
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        system_instruction=SYSTEM_PROMPT
+    )
+
 @app.get("/health")
 async def health_check():
     return {
         "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
+        "api_key_configured": bool(API_KEY),
         "service": "ChatBot Sistemas Digitales"
     }
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
     try:
+        if not API_KEY:
+            raise HTTPException(status_code=500, detail="GOOGLE_API_KEY no configurada en Render")
+        
         if not request.messages:
             raise HTTPException(status_code=400, detail="Se requiere mensaje")
         
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY no configurada")
+        # Obtenemos el último mensaje del usuario
+        user_message = request.messages[-1].content
         
-        messages_for_api = [{"role": msg.role, "content": msg.content} for msg in request.messages]
-        
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=2048,
-            system=SYSTEM_PROMPT,
-            messages=messages_for_api
-        )
+        # Generar respuesta con Gemini
+        response = model.generate_content(user_message)
         
         return ChatResponse(
-            response=response.content[0].text,
+            response=response.text,
             timestamp=datetime.now().isoformat()
         )
     
-    except anthropic.APIError as e:
-        raise HTTPException(status_code=500, detail=f"Error en API: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
@@ -89,6 +91,7 @@ async def chat(request: ChatRequest):
 async def serve_frontend():
     return FileResponse("index.html")
 
+# Si no tienes carpeta 'static', esto servirá los archivos de la raíz
 app.mount("/static", StaticFiles(directory="."), name="static")
 
 if __name__ == "__main__":
