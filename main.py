@@ -1,13 +1,13 @@
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import List
 import google.generativeai as genai
 
 app = FastAPI()
 
+# Configuración de CORS para que tu frontend pueda hablar con el backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,27 +23,25 @@ class Message(BaseModel):
 class ChatRequest(BaseModel):
     messages: List[Message]
 
+# Configuración de Gemini con la clave de Render
+API_KEY = os.environ.get("GOOGLE_API_KEY")
+if API_KEY:
+    genai.configure(api_key=API_KEY)
+
 @app.post("/chat")
 async def chat(request: ChatRequest):
-    # PRUEBA 1: ¿Render está leyendo la clave?
-    api_key = os.environ.get("GOOGLE_API_KEY")
-    if not api_key:
-        return {"response": "ERROR CRÍTICO: Render no está detectando tu variable GOOGLE_API_KEY. Revisa la pestaña Environment."}
-
     try:
-        # PRUEBA 2: ¿La clave es válida para Google?
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        if not API_KEY:
+            return {"response": "Error: No se encontró la API KEY en Render."}
         
-        user_text = request.messages[-1].content
-        response = model.generate_content(user_text)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        user_message = request.messages[-1].content
+        response = model.generate_content(user_message)
         
         return {"response": response.text}
-
     except Exception as e:
-        # PRUEBA 3: Si Google rechaza la conexión, aquí nos dirá por qué
-        return {"response": f"ERROR DE GOOGLE: {str(e)}"}
+        return {"response": f"Hubo un error interno: {str(e)}"}
 
-@app.get("/")
-async def home():
-    return FileResponse("index.html")
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
