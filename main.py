@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 import anthropic
 import os
 from datetime import datetime
@@ -69,7 +69,7 @@ async def chat(request: ChatRequest):
         
         client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
-            model="claude-opus-4-5",
+            model="claude-haiku-4-5-20251001",
             max_tokens=2048,
             system=SYSTEM_PROMPT,
             messages=messages_for_api
@@ -85,11 +85,11 @@ async def chat(request: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-app.mount("/static", StaticFiles(directory="."), name="static")
-
 @app.get("/")
 async def serve_frontend():
     return FileResponse("index.html")
+
+app.mount("/static", StaticFiles(directory="."), name="static")
 
 if __name__ == "__main__":
     import uvicorn
