@@ -81,14 +81,8 @@
         }
         
         @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .message.user {
@@ -141,23 +135,12 @@
             animation: bounce 1.4s infinite;
         }
         
-        .typing-dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-        
-        .typing-dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
         
         @keyframes bounce {
-            0%, 60%, 100% {
-                opacity: 0.3;
-                transform: translateY(0);
-            }
-            30% {
-                opacity: 1;
-                transform: translateY(-10px);
-            }
+            0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+            30% { opacity: 1; transform: translateY(-10px); }
         }
         
         .input-area {
@@ -223,15 +206,12 @@
             font-weight: bold;
             transition: all 0.3s;
             white-space: nowrap;
+            min-width: 90px;
         }
         
         .send-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-        
-        .send-btn:active {
-            transform: translateY(0);
         }
         
         .send-btn:disabled {
@@ -263,35 +243,15 @@
             color: #666;
         }
         
-        .status.connected {
-            color: #4caf50;
-        }
-        
-        .status.disconnected {
-            color: #f44336;
-        }
+        .status.connected { color: #4caf50; }
+        .status.disconnected { color: #f44336; }
         
         @media (max-width: 600px) {
-            .container {
-                height: 100vh;
-                border-radius: 0;
-            }
-            
-            .message-content {
-                max-width: 90%;
-            }
-            
-            .header h1 {
-                font-size: 20px;
-            }
-            
-            .button-group {
-                flex-direction: column;
-            }
-            
-            .button-group button {
-                min-width: auto;
-            }
+            .container { height: 100vh; border-radius: 0; }
+            .message-content { max-width: 90%; }
+            .header h1 { font-size: 20px; }
+            .button-group { flex-direction: column; }
+            .button-group button { min-width: auto; }
         }
     </style>
 </head>
@@ -340,3 +300,131 @@
                     onkeypress="handleEnter(event)"
                 >
                 <button class="send-btn" onclick="sendMessage()" id="send-btn">Enviar</button>
+                <button class="clear-btn" onclick="clearChat()">Limpiar</button>
+            </div>
+            
+            <div class="status" id="status">⏳ Conectando...</div>
+        </div>
+    </div>
+    
+    <script>
+        let messageHistory = [];
+
+        document.addEventListener('DOMContentLoaded', checkConnection);
+
+        async function checkConnection() {
+            try {
+                const response = await fetch('/health');
+                if (response.ok) {
+                    updateStatus('Conectado ✓', true);
+                }
+            } catch (error) {
+                updateStatus('Error de conexión', false);
+            }
+        }
+
+        function updateStatus(message, connected) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = connected ? 'status connected' : 'status disconnected';
+        }
+
+        function handleEnter(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+
+            addMessage(message, 'user');
+            input.value = '';
+            showTypingIndicator();
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        messages: [
+                            ...messageHistory,
+                            {role: 'user', content: message}
+                        ]
+                    })
+                });
+
+                if (!response.ok) throw new Error(`Error ${response.status}`);
+
+                const data = await response.json();
+
+                messageHistory.push({role: 'user', content: message});
+                messageHistory.push({role: 'assistant', content: data.response});
+
+                removeTypingIndicator();
+                addMessage(data.response, 'bot');
+
+            } catch (error) {
+                removeTypingIndicator();
+                addMessage(`Error: ${error.message}`, 'bot');
+                updateStatus('Error de conexión', false);
+            } finally {
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        function sendPredefined(message) {
+            document.getElementById('message-input').value = message;
+            sendMessage();
+        }
+
+        function addMessage(content, role) {
+            const chatContainer = document.getElementById('chat-container');
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${role}`;
+            messageEl.innerHTML = `<div class="message-content">${content.replace(/\n/g, '<br>')}</div>`;
+            chatContainer.appendChild(messageEl);
+            setTimeout(() => { chatContainer.scrollTop = chatContainer.scrollHeight; }, 100);
+        }
+
+        function showTypingIndicator() {
+            const chatContainer = document.getElementById('chat-container');
+            const typingEl = document.createElement('div');
+            typingEl.className = 'message bot';
+            typingEl.id = 'typing-indicator';
+            typingEl.innerHTML = `
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>`;
+            chatContainer.appendChild(typingEl);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingEl = document.getElementById('typing-indicator');
+            if (typingEl) typingEl.remove();
+        }
+
+        function clearChat() {
+            if (confirm('¿Deseas borrar todo el historial?')) {
+                document.getElementById('chat-container').innerHTML = `
+                    <div class="message bot">
+                        <div class="message-content">Historial borrado. ¿Con qué tema deseas comenzar?</div>
+                    </div>`;
+                messageHistory = [];
+            }
+        }
+    </script>
+</body>
+</html>
