@@ -33,7 +33,6 @@ class ChatResponse(BaseModel):
 
 SYSTEM_PROMPT = """Eres un investigador senior especializado en Sistemas Digitales. 
 Tu rol es explicar conceptos complejos de manera clara y pedagógica.
-
 ÁREAS DE EXPERTICIA:
 1. Compuertas Lógicas (AND, OR, NOT, NAND, NOR, XOR, XNOR)
 2. Álgebra de Boole y Simplificación de Circuitos
@@ -42,7 +41,6 @@ Tu rol es explicar conceptos complejos de manera clara y pedagógica.
 5. Lenguajes HDL (VHDL, Verilog)
 6. Lógica Digital y Sistemas Numéricos
 7. Microcontroladores
-
 Explica conceptos de forma progresiva (básico → avanzado).
 Utiliza analogías cuando sea posible.
 Proporciona ejemplos prácticos."""
@@ -77,7 +75,7 @@ async def chat(request: ChatRequest):
         
         client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
-            model="claude-opus-4-20250805",
+            model="claude-opus-4-5",
             max_tokens=2048,
             system=SYSTEM_PROMPT,
             messages=messages_for_api
@@ -93,6 +91,6 @@ async def chat(request: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
