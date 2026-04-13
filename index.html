@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatBot Sistemas Digitales</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 900px;
+            height: 90vh;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            border-bottom: 3px solid #764ba2;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            font-size: 13px;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+        
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 25px;
+            background-color: #f8f9fa;
+        }
+        
+        .chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .chat-container::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 10px;
+        }
+        
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+        
+        .message {
+            margin-bottom: 16px;
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.user {
+            justify-content: flex-end;
+        }
+        
+        .message-content {
+            max-width: 75%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px 0 12px 12px;
+        }
+        
+        .message.bot .message-content {
+            background: #e8eaf6;
+            color: #333;
+            border-radius: 0 12px 12px 12px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 8px;
+            background: #764ba2;
+            color: white;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 14px 16px;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            animation: bounce 1.4s infinite;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes bounce {
+            0%, 60%, 100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-10px);
+            }
+        }
+        
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #ddd;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .button-group button {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px 12px;
+            font-size: 12px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .button-group button:hover {
+            background: #5a3681;
+            transform: translateY(-2px);
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #message-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+        
+        #message-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .send-btn {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .send-btn:active {
+            transform: translateY(0);
+        }
+        
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .clear-btn {
+            padding: 12px 20px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .clear-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .status.connected {
+            color: #4caf50;
+        }
+        
+        .status.disconnected {
+            color: #f44336;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .message-content {
+                max-width: 90%;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .button-group button {
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 ChatBot Sistemas Digitales</h1>
+            <p>Especialista en compuertas lógicas, FPGA y sistemas digitales</p>
+        </div>
+        
+        <div class="chat-container" id="chat-container">
+            <div class="message bot">
+                <div class="message-content">
+                    Hola 👋 Soy tu asistente especializado en Sistemas Digitales. 
+                    Puedo ayudarte con:<br><br>
+                    • Compuertas lógicas (AND, OR, NOT, NAND, NOR, XOR)<br>
+                    • Álgebra de Boole<br>
+                    • Circuitos digitales<br>
+                    • Introducción a FPGA<br>
+                    • VHDL y Verilog<br>
+                    • Sistemas numéricos<br>
+                    • Microcontroladores<br><br>
+                    ¿Con qué tema deseas comenzar?
+                </div>
+            </div>
+        </div>
+        
+        <div class="input-area">
+            <div class="button-group">
+                <button onclick="sendPredefined('¿Cuáles son las principales compuertas lógicas?')">
+                    Compuertas Lógicas
+                </button>
+                <button onclick="sendPredefined('Explícame sobre FPGA')">
+                    FPGA
+                </button>
+                <button onclick="sendPredefined('¿Qué es el álgebra de Boole?')">
+                    Álgebra de Boole
+                </button>
+            </div>
+            
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="message-input" 
+                    placeholder="Escribe tu pregunta sobre sistemas digitales..."
+                    onkeypress="handleEnter(event)"
+                >
+                <button class="send-btn" onclick="sendMessage()" id="send-btn">Enviar</button>
+                <button class="clear-btn" onclick="clearChat()">Limpiar</button>
+            </div>
+            
+            <div class="status" id="status">
+                ⏳ Conectando...
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        let messageHistory = [];
+        let isConnected = false;
+        
+        document.addEventListener('DOMContentLoaded', checkConnection);
+        
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (response.ok) {
+                    isConnected = true;
+                    updateStatus('Conectado ✓', true);
+                }
+            } catch (error) {
+                isConnected = false;
+                updateStatus('Desconectado - ¿Es local? Ejecuta: python main.py', false);
+            }
+        }
+        
+        function updateStatus(message, connected) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = connected ? 'status connected' : 'status disconnected';
+        }
+        
+        function handleEnter(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            if (!isConnected) {
+                updateStatus('No conectado. Ejecuta: python main.py', false);
+                return;
+            }
+            
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+            
+            addMessage(message, 'user');
+            input.value = '';
+            
+            showTypingIndicator();
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/chat`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        messages: [
+                            ...messageHistory,
+                            {role: 'user', content: message}
+                        ]
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                messageHistory.push({role: 'user', content: message});
+                messageHistory.push({role: 'assistant', content: data.response});
+                
+                removeTypingIndicator();
+                addMessage(data.response, 'bot', data.topic_detected);
+                
+            } catch (error) {
+                removeTypingIndicator();
+                addMessage(
+                    `Error: ${error.message}. ¿Ejecutaste python main.py?`,
+                    'bot'
+                );
+                isConnected = false;
+                updateStatus('Error de conexión', false);
+            } finally {
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+        
+        function sendPredefined(message) {
+            document.getElementById('message-input').value = message;
+            sendMessage();
+        }
+        
+        function addMessage(content, role, topic = null) {
+            messageHistory.push({role, content});
+            
+            const chatContainer = document.getElementById('chat-container');
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${role}`;
+            
+            let contentHTML = `<div class="message-content">`;
+            contentHTML += content.replace(/\n/g, '<br>');
+            
+            if (topic && role === 'bot') {
+                contentHTML += `<div class="status-badge">📌 ${topic}</div>`;
+            }
+            
+            contentHTML += '</div>';
+            
+            messageEl.innerHTML = contentHTML;
+            chatContainer.appendChild(messageEl);
+            
+            setTimeout(() => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 100);
+        }
+        
+        function showTypingIndicator() {
+            const chatContainer = document.getElementById('chat-container');
+            const typingEl = document.createElement('div');
+            typingEl.className = 'message bot';
+            typingEl.id = 'typing-indicator';
+            typingEl.innerHTML = `
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(typingEl);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function removeTypingIndicator() {
+            const typingEl = document.getElementById('typing-indicator');
+            if (typingEl) typingEl.remove();
+        }
+        
+        function clearChat() {
+            if (confirm('¿Deseas borrar todo el historial?')) {
+                document.getElementById('chat-container').innerHTML = `
+                    <div class="message bot">
+                        <div class="message-content">
+                            Historial borrado. ¿Con qué tema deseas comenzar?
+                        </div>
+                    </div>
+                `;
+                messageHistory = [];
+                document.getElementById('message-input').value = '';
+            }
+        }
+    </script>
+</body>
+</html>
